@@ -264,9 +264,11 @@ def pagina_exemplo2():
 
 def pagina_exemplo3():
     """Renderiza a página com a análise interativa da população por faixa etária."""
-    st.title("📊 Análise da População por Faixa Etária")
-    st.markdown("População na força de trabalho por faixa etária, de 2018 a 2023. Passe o mouse sobre as linhas para ver os valores.")
-
+    st.title("📊 Análise da População na Força de Trabalho por Faixa Etária e por Grau de Instrução")
+    st.markdown("População na força de trabalho por faixa etária e grau de instrução, de 2018 a 2023. Passe o mouse sobre as linhas para ver os valores.")
+    
+    st.subheader("Análise por Faixa Etária")
+    
     # Configurações específicas para faixa etária
     colunas_desejadas_etario = {
         "Características selecionadas": "features",
@@ -279,50 +281,46 @@ def pagina_exemplo3():
     
     # Carrega os dados usando a função genérica
     etario_filtrado = carregar_e_processar_dados(colunas_desejadas_etario, faixas_etario, "features")
-
+    
     if etario_filtrado.empty:
         st.warning("Não foi possível carregar os dados para a análise por faixa etária.")
-        return
+    else:
+        # Agrupa os dados para o gráfico
+        etario_agrupado = etario_filtrado.groupby(["year", "features"])["work_pop"].sum().reset_index()
 
-    # Agrupa os dados para o gráfico
-    etario_agrupado = etario_filtrado.groupby(["year", "features"])["work_pop"].sum().reset_index()
+        # Cria o gráfico de linhas interativo com Plotly
+        fig_etaria = px.line(
+            etario_agrupado,
+            x="year",
+            y="work_pop",
+            color="features",
+            markers=True,
+            labels={
+                "year": "Ano",
+                "work_pop": "População na Força de Trabalho",
+                "features": "Faixa Etária"
+            },
+            title="Evolução da Força de Trabalho por Faixa Etária (2018-2023)"
+        )
 
-    # Cria o gráfico de linhas interativo com Plotly
-    fig = px.line(
-        etario_agrupado,
-        x="year",
-        y="work_pop",
-        color="features",
-        markers=True,
-        labels={
-            "year": "Ano",
-            "work_pop": "População na Força de Trabalho",
-            "features": "Faixa Etária"
-        },
-        title="Evolução da Força de Trabalho por Faixa Etária (2018-2023)"
-    )
+        fig_etaria.update_layout(
+            xaxis_tickangle=-45,
+            yaxis_title="População (em milhões)",
+            legend_title="Faixa Etária",
+            hovermode="x unified"
+        )
+        
+        # Formata o eixo Y para exibir em milhões
+        fig_etaria.update_yaxes(tickformat=".2fM")
 
-    fig.update_layout(
-        xaxis_tickangle=-45,
-        yaxis_title="População (em milhões)",
-        legend_title="Faixa Etária",
-        hovermode="x unified"
-    )
+        # Exibe o gráfico no Streamlit
+        st.plotly_chart(fig_etaria, use_container_width=True)
+        
     
-    # Formata o eixo Y para exibir em milhões
-    fig.update_yaxes(tickformat=".2fM")
-
-    # Exibe o gráfico no Streamlit
-    st.plotly_chart(fig, use_container_width=True)
-
-    with st.expander("Ver dados brutos"):
-        st.dataframe(etario_filtrado)
-
-def pagina_exemplo4():
-    """Renderiza a página com a análise interativa da população por grau de instrução."""
-    st.title("🎓 Análise da População por Grau de Instrução")
-    st.markdown("População na força de trabalho por grau de instrução, de 2018 a 2023. Passe o mouse sobre as linhas para ver os valores.")
-
+    st.divider()
+    
+    st.subheader("Análise por Grau de Instrução")
+    
     # Configurações específicas para grau de instrução
     colunas_desejadas_instrucao = {
         "Características selecionadas": "degree",
@@ -332,49 +330,48 @@ def pagina_exemplo4():
         "homens": (58, 62),
         "mulheres": (64, 68)
     }
-    
     # Carrega os dados usando a função genérica
     socio_filtrado = carregar_e_processar_dados(colunas_desejadas_instrucao, faixas_instrucao, "degree")
 
     if socio_filtrado.empty:
         st.warning("Não foi possível carregar os dados para a análise por grau de instrução.")
-        return
+    else:
+        # Agrupa os dados para o gráfico
+        socio_agrupado = socio_filtrado.groupby(['year', 'degree'])['work_pop'].sum().reset_index()
 
-    # Agrupa os dados para o gráfico
-    socio_agrupado = socio_filtrado.groupby(['year', 'degree'])['work_pop'].sum().reset_index()
+        # Cria o gráfico de linhas interativo com Plotly
+        fig_instru = px.line(
+            socio_agrupado,
+            x="year",
+            y="work_pop",
+            color="degree",
+            markers=True,
+            labels={
+                "year": "Ano",
+                "work_pop": "População na Força de Trabalho",
+                "degree": "Grau de Instrução"
+            },
+            title="Evolução da Força de Trabalho por Grau de Instrução (2018-2023)"
+        )
+        
+        fig_instru.update_layout(
+            xaxis_tickangle=-45,
+            yaxis_title="População (em milhões)",
+            legend_title="Grau de Instrução",
+            hovermode="x unified"
+        )
 
-    # Cria o gráfico de linhas interativo com Plotly
-    fig = px.line(
-        socio_agrupado,
-        x="year",
-        y="work_pop",
-        color="degree",
-        markers=True,
-        labels={
-            "year": "Ano",
-            "work_pop": "População na Força de Trabalho",
-            "degree": "Grau de Instrução"
-        },
-        title="Evolução da Força de Trabalho por Grau de Instrução (2018-2023)"
-    )
-    
-    fig.update_layout(
-        xaxis_tickangle=-45,
-        yaxis_title="População (em milhões)",
-        legend_title="Grau de Instrução",
-        hovermode="x unified"
-    )
+        # Formata o eixo Y para exibir em milhões
+        fig_instru.update_yaxes(tickformat=".2fM")
 
-    # Formata o eixo Y para exibir em milhões
-    fig.update_yaxes(tickformat=".2fM")
+        # Exibe o gráfico no Streamlit
+        st.plotly_chart(fig_instru, use_container_width=True)
+        
+        with st.expander("Ver dados brutos"):
+            st.dataframe(etario_filtrado)
 
-    # Exibe o gráfico no Streamlit
-    st.plotly_chart(fig, use_container_width=True)
 
-    with st.expander("Ver dados brutos"):
-        st.dataframe(socio_filtrado)
-
-def pagina_exemplo5_combinada():
+def pagina_exemplo4():
     """
     Renderiza uma página com as análises de rendimento usando um único DataFrame unificado.
     """
@@ -462,16 +459,14 @@ if 'page' not in st.session_state:
 # st.sidebar.title("Navegação")
 # if st.sidebar.button("Exemplo 1: Elementos Básicos", use_container_width=True, type="primary" if st.session_state.page == 'exemplo1' else "secondary"):
     # st.session_state.page = 'exemplo1'
-if st.sidebar.button("Exemplo 1: Projeções IBGE", use_container_width=True, type="primary" if st.session_state.page == 'exemplo1' else "secondary"):
+if st.sidebar.button("Projeções IBGE", use_container_width=True, type="primary" if st.session_state.page == 'exemplo1' else "secondary"):
     st.session_state.page = 'exemplo1'
-if st.sidebar.button("Exemplo 2: População por Sexo", use_container_width=True, type="primary" if st.session_state.page == 'exemplo2' else "secondary"):
+if st.sidebar.button("População por Sexo", use_container_width=True, type="primary" if st.session_state.page == 'exemplo2' else "secondary"):
     st.session_state.page = 'exemplo2'
-if st.sidebar.button("Exemplo 3: Faixa Etária", use_container_width=True, type="primary" if st.session_state.page == 'exemplo3' else "secondary"):
+if st.sidebar.button("Análise da Força de Trabalho", use_container_width=True, type="primary" if st.session_state.page == 'exemplo3' else "secondary"):
     st.session_state.page = 'exemplo3'
-if st.sidebar.button("Exemplo 4: Grau de Instrução", use_container_width=True, type="primary" if st.session_state.page == 'exemplo4' else "secondary"):
+if st.sidebar.button("Análise de Renda", use_container_width=True, type="primary" if st.session_state.page == 'exemplo4' else "secondary"):
     st.session_state.page = 'exemplo4'
-if st.sidebar.button("Exemplo 5: Análise de Renda", use_container_width=True, type="primary" if st.session_state.page == 'exemplo5_combinada' else "secondary"):
-    st.session_state.page = 'exemplo5_combinada'
 
 
 st.sidebar.divider()
@@ -485,5 +480,3 @@ elif st.session_state.page == 'exemplo3':
     pagina_exemplo3()
 elif st.session_state.page == 'exemplo4':
     pagina_exemplo4()
-elif st.session_state.page == 'exemplo5_combinada':
-    pagina_exemplo5_combinada()
