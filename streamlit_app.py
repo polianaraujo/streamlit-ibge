@@ -99,6 +99,92 @@ def carregar_e_processar_dados(colunas_desejadas, faixas, feature_col_name):
     return df_final.reset_index(drop=True)
 
 
+
+@st.cache_data
+def carregar_dados_de_renda():
+    """
+    Carrega e unifica os dados de renda por instrução (hora) e por idade (mês)
+    a partir de URLs do IBGE, retornando um único DataFrame.
+    """
+    url_salario_etario = 'https://raw.githubusercontent.com/polianaraujo/streamlit-ibge/main/tables/tabela_1_15_OcupCaract_Geo_Rend.xls'
+    url_salario_instrucao = 'https://raw.githubusercontent.com/polianaraujo/streamlit-ibge/main/tables/tabela_1_17_InstrCaract_Rend.xls'
+    anos = ["2018", "2019", "2020", "2021", "2022", "2023"]
+
+    # --- 1. Carregar dados de Renda por Instrução (inst_sal) ---
+    try:
+        colunas_desejadas_BR_inst = {"Grandes Regiões, sexo e cor ou raça": "BR"}
+        colunas_desejadas_INST = {
+            "Sem instrução ou fundamental incompleto": "incomplete",
+            "Ensino fundamental completo ou médio incompleto": "elementary",
+            "Ensino médio completo ou superior incompleto": "high",
+            "Ensino superior completo": "college"
+        }
+        
+        lista_dfs_inst = []
+        for ano in anos:
+            df_br = pd.read_excel(
+                url_salario_instrucao, sheet_name=ano, skiprows=3,
+                usecols=list(colunas_desejadas_BR_inst.keys()), engine='xlrd'
+            ).rename(columns=colunas_desejadas_BR_inst).iloc[[4]].reset_index(drop=True)
+
+            df_vals = pd.read_excel(
+                url_salario_instrucao, sheet_name=ano, skiprows=5, engine='xlrd'
+            ).drop(columns=["Unnamed: 0", "Unnamed: 1"]).drop([0,1]).iloc[[0]].reset_index(drop=True).rename(columns=colunas_desejadas_INST)
+            
+            df_br['year'] = ano
+            df_ano_completo = df_br.join(df_vals)
+            lista_dfs_inst.append(df_ano_completo)
+            
+        inst_sal = pd.concat(lista_dfs_inst, ignore_index=True)
+
+    except Exception as e:
+        st.error(f"Erro ao carregar dados de renda por instrução. Erro: {e}")
+        return pd.DataFrame()
+
+    # --- 2. Carregar dados de Renda por Faixa Etária (idade_sal) ---
+    try:
+        colunas_desejadas_IDADE_BR = {"Grandes Regiões, Unidades da Federação e Municípios das Capitais": "BR"}
+        colunas_desejadas_IDADE = ["14 a 29 anos", "30 a 49 anos", "50 a 59 anos", "60 anos ou mais"]
+
+        lista_dfs_idade = []
+        for ano in anos:
+            df_br_idade = pd.read_excel(
+                url_salario_etario, sheet_name=ano, skiprows=2,
+                usecols=list(colunas_desejadas_IDADE_BR.keys()), engine='xlrd'
+            ).rename(columns=colunas_desejadas_IDADE_BR).iloc[[3]].reset_index(drop=True)
+            
+            df_vals_idade = pd.read_excel(
+                url_salario_etario, sheet_name=ano, skiprows=4,
+                usecols=colunas_desejadas_IDADE, engine='xlrd'
+            ).iloc[[1]].reset_index(drop=True)
+            
+            df_br_idade['year'] = ano
+            df_ano_idade_completo = df_br_idade.join(df_vals_idade)
+            lista_dfs_idade.append(df_ano_idade_completo)
+        
+        idade_sal = pd.concat(lista_dfs_idade, ignore_index=True)
+        
+        # ✨ CORREÇÃO: Renomeia as colunas de idade para nomes padronizados,
+        # que serão usados pela função que cria os gráficos.
+        idade_sal = idade_sal.rename(columns={
+            "14 a 29 anos": "rend_mes_14_29",
+            "30 a 49 anos": "rend_mes_30_49",
+            "50 a 59 anos": "rend_mes_50_59",
+            "60 anos ou mais": "rend_mes_60_mais"
+        })
+
+    except Exception as e:
+        st.error(f"Erro ao carregar dados de renda por idade. Erro: {e}")
+        return pd.DataFrame()
+
+    # --- 3. Unificar os DataFrames ---
+    df_final_unificado = pd.merge(inst_sal, idade_sal, on=["BR", "year"], how="inner")
+    
+    return df_final_unificado
+
+
+
+
 # --- DEFINIÇÕES DAS PÁGINAS ---
 
 def pagina_exemplo1():
@@ -249,7 +335,6 @@ def pagina_exemplo4():
     with st.expander("Ver dados brutos"):
         st.dataframe(etario_filtrado)
 
-
 def pagina_exemplo5():
     """Renderiza a página com a análise interativa da população por grau de instrução."""
     st.title("🎓 Análise da População por Grau de Instrução")
@@ -306,6 +391,83 @@ def pagina_exemplo5():
     with st.expander("Ver dados brutos"):
         st.dataframe(socio_filtrado)
 
+def pagina_exemplo6_combinada():
+    """
+    Renderiza uma página com as análises de rendimento usando um único DataFrame unificado.
+    """
+    st.title("Análise de Rendimento por Idade e Instrução (2018-2023)")
+    st.markdown("Comparação da evolução do rendimento médio no Brasil, segmentado por faixa etária e grau de instrução.")
+
+    # Carrega o DataFrame unificado
+    df_renda_unificado = carregar_dados_de_renda()
+
+    if df_renda_unificado.empty:
+        st.warning("Não foi possível carregar os dados de renda para a análise.")
+        return
+
+    col1, col2 = st.columns(2)
+
+    # --- Gráfico 1: Rendimento por Faixa Etária (na coluna 1) ---
+    with col1:
+        st.subheader("Rendimento Mensal por Faixa Etária")
+        
+        # Colunas de rendimento mensal por idade
+        cols_idade = ["rend_mes_14_29", "rend_mes_30_49", "rend_mes_50_59", "rend_mes_60_mais"]
+        
+        # Transforma o DF para o formato longo, específico para este gráfico
+        df_long_idade = df_renda_unificado.melt(
+            id_vars=['year'],
+            value_vars=cols_idade,
+            var_name='faixa_etaria',
+            value_name='rendimento_mes'
+        ).dropna(subset=['rendimento_mes'])
+        
+        mapa_nomes_idade = {
+            "rend_mes_14_29": "14 a 29 anos", "rend_mes_30_49": "30 a 49 anos",
+            "rend_mes_50_59": "50 a 59 anos", "rend_mes_60_mais": "60 anos ou mais"
+        }
+        df_long_idade['faixa_etaria'] = df_long_idade['faixa_etaria'].map(mapa_nomes_idade)
+
+        fig_etaria = px.line(
+            df_long_idade, x='year', y='rendimento_mes', color='faixa_etaria', markers=True,
+            labels={"year": "Ano", "rendimento_mes": "Rendimento Médio Mensal (R$)", "faixa_etaria": "Faixa Etária"}
+        )
+        fig_etaria.update_layout(xaxis_tickangle=-45, legend_title="Faixa Etária", hovermode="x unified")
+        fig_etaria.update_traces(hovertemplate='<b>%{data.name}</b><br>Rendimento: R$ %{y:,.2f}<extra></extra>')
+        st.plotly_chart(fig_etaria, use_container_width=True)
+
+    # --- Gráfico 2: Rendimento por Grau de Instrução (na coluna 2) ---
+    with col2:
+        st.subheader("Rendimento por Hora por Grau de Instrução")
+        
+        # Colunas de rendimento por hora por instrução
+        cols_instrucao = ["incomplete", "elementary", "high", "college"]
+
+        df_long_instrucao = df_renda_unificado.melt(
+            id_vars=['year'],
+            value_vars=cols_instrucao,
+            var_name='grau_instrucao',
+            value_name='rendimento_hora'
+        ).dropna(subset=['rendimento_hora'])
+        
+        mapa_nomes_instrucao = {
+            "incomplete": "Sem instrução ou Fund. Incompleto",
+            "elementary": "Fund. Completo ou Médio Incompleto",
+            "high": "Médio Completo ou Sup. Incompleto",
+            "college": "Superior Completo"
+        }
+        df_long_instrucao['grau_instrucao'] = df_long_instrucao['grau_instrucao'].map(mapa_nomes_instrucao)
+
+        fig_instrucao = px.line(
+            df_long_instrucao, x='year', y='rendimento_hora', color='grau_instrucao', markers=True,
+            labels={"year": "Ano", "rendimento_hora": "Rendimento Médio por Hora (R$)", "grau_instrucao": "Grau de Instrução"}
+        )
+        fig_instrucao.update_layout(xaxis_tickangle=-45, legend_title="Grau de Instrução", hovermode="x unified")
+        fig_instrucao.update_traces(hovertemplate='<b>%{data.name}</b><br>Rendimento: R$ %{y:,.2f}<extra></extra>')
+        st.plotly_chart(fig_instrucao, use_container_width=True)
+
+    with st.expander("Ver dados brutos unificados"):
+        st.dataframe(df_renda_unificado)
 
 # --- LÓGICA PRINCIPAL DE NAVEGAÇÃO ---
 
@@ -325,6 +487,8 @@ if st.sidebar.button("Exemplo 4: Faixa Etária", use_container_width=True, type=
     st.session_state.page = 'exemplo4'
 if st.sidebar.button("Exemplo 5: Grau de Instrução", use_container_width=True, type="primary" if st.session_state.page == 'exemplo5' else "secondary"):
     st.session_state.page = 'exemplo5'
+if st.sidebar.button("Exemplo 6: Análise de Renda", use_container_width=True, type="primary" if st.session_state.page == 'exemplo6_combinada' else "secondary"):
+    st.session_state.page = 'exemplo6_combinada'
 
 
 st.sidebar.divider()
@@ -340,3 +504,5 @@ elif st.session_state.page == 'exemplo4':
     pagina_exemplo4()
 elif st.session_state.page == 'exemplo5':
     pagina_exemplo5()
+elif st.session_state.page == 'exemplo6_combinada':
+    pagina_exemplo6_combinada()
