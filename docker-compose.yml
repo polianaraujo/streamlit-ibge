@@ -1,0 +1,9 @@
+services:
+  webserve:
+    container_name: webserver
+    build:
+      context: .
+    volumes:
+      - .:/app
+    ports:
+      - 8502:8501
