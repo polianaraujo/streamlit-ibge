@@ -304,7 +304,7 @@ def pagina_exemplo3():
     Renderiza uma página com um gráfico de área e um de barras animado,
     ambos controlados dinamicamente por um seletor de análise.
     """
-    st.title("📈 Composição e Evolução da Força de Trabalho (2012-2023)")
+    st.title("📈 Evolução da Força de Trabalho (2012-2023)")
     st.markdown(
         "Veja como a força de trabalho no Brasil evoluiu. "
         "Use o seletor para alternar entre a análise por **faixa etária** ou por **grau de instrução**."
