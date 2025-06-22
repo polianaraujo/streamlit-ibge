@@ -185,7 +185,7 @@ def carregar_dados_de_renda():
 def pagina_capa_dashboard():
     st.markdown("""
         <div style="text-align: center;">
-            <h1 style="color: #4a90e2; font-size: 48px;">Dashboard IBGE - Brasil 2018-2045</h1>
+            <h1 style="color: #4a90e2; font-size: 48px;">Dashboard IBGE - Brasil</h1>
             <p style="font-size: 20px; color: #555555;">
                 Um painel interativo com dados de <strong>população</strong>, <strong>força de trabalho</strong> e <strong>rendimento</strong>, 
                 baseado em análises do IBGE.
