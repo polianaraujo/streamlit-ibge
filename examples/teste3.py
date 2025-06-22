@@ -41,7 +41,7 @@ def carregar_e_processar_dados(colunas_desejadas, faixas, feature_col_name):
     Função genérica para carregar e processar dados do arquivo Excel do IBGE.
     Carrega dados da força de trabalho por faixa etária ou instrução.
     """
-    anos = ["2018", "2019", "2020", "2021", "2022", "2023"]
+    anos = ["2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023"]
     url = "https://raw.githubusercontent.com/polianaraujo/streamlit-ibge/main/tables/tabela_1_1_Indic_BR.xls"
     
     # Função interna para carregar os dados de uma aba específica (ano)
@@ -352,7 +352,29 @@ def pagina_exemplo3():
 
         # Exibe o gráfico no Streamlit
         st.plotly_chart(fig_etaria, use_container_width=True)
-        
+    
+    
+    st.divider()
+    
+    # Criar grupo combinado
+    etario_filtrado["Grupo"] = etario_filtrado["sex"] + " - " + etario_filtrado["features"]
+
+    # # Gráfico Barras verticais animadas
+    fig_horizontal = px.bar(
+        etario_filtrado,
+        x="work_pop",
+        y="Grupo",
+        color="Grupo",
+        orientation="h",
+        animation_frame="year",
+        animation_group="Grupo",
+        range_x=[0, etario_filtrado["work_pop"].max() * 1.1],
+        labels={"work_pop": "População na Força de Trabalho", "Grupo": "Grupo"},
+        title="Evolução da Força de Trabalho por Sexo e Faixa Etária"
+    )
+
+    fig_horizontal.update_xaxes(showgrid=True)
+    st.plotly_chart(fig_horizontal, use_container_width=True)
     
     st.divider()
     
@@ -403,6 +425,32 @@ def pagina_exemplo3():
 
         # Exibe o gráfico no Streamlit
         st.plotly_chart(fig_instru, use_container_width=True)
+        
+        st.divider()
+        
+        # Criar grupo combinado para o gráfico de instrução
+        socio_filtrado["Grupo"] = socio_filtrado["sex"] + " - " + socio_filtrado["degree"]
+
+        # Gráfico de Barras Horizontais Animadas para Grau de Instrução
+        fig_instrucao_animado = px.bar(
+            socio_filtrado,
+            x="work_pop",
+            y="Grupo",
+            color="Grupo",
+            orientation="h",
+            animation_frame="year",
+            animation_group="Grupo",
+            range_x=[0, socio_filtrado["work_pop"].max() * 1.1],
+            labels={"work_pop": "População na Força de Trabalho", "Grupo": "Grupo"},
+            title="Evolução da Força de Trabalho por Sexo e Grau de Instrução"
+        )
+
+        # Adicionar grid vertical
+        fig_instrucao_animado.update_xaxes(showgrid=True)
+
+        # Exibir o gráfico no Streamlit
+        st.plotly_chart(fig_instrucao_animado, use_container_width=True)
+        
         
         with st.expander("Ver dados brutos"):
             st.dataframe(etario_filtrado)
@@ -487,56 +535,6 @@ def pagina_exemplo4():
         st.dataframe(df_renda_unificado)
 
 
-#adicionado
-
-def pagina_grafico_animado_sexo():
-    st.title("📊 População na Força de Trabalho por Sexo e Faixa Etária")
-    st.markdown("Animação da evolução da população na força de trabalho por sexo e faixa etária de 2018 a 2023.")
-
-    colunas_desejadas_etario = {
-        "Características selecionadas": "features",
-        "População na força de trabalho\n(1 000 pessoas)": "work_pop"
-    }
-    faixas_etario = {
-        "homens": (15, 22),
-        "mulheres": (24, 31)
-    }
-
-    df = carregar_e_processar_dados(colunas_desejadas_etario, faixas_etario, "features")
-
-    if df.empty:
-        st.warning("Não foi possível carregar os dados para gerar o gráfico animado.")
-        return
-
-    # Criar um grupo combinado para ser usado como categoria no eixo Y
-    df["Grupo"] = df["sex"] + " - " + df["features"]
-
-    # Gráfico de barras horizontais animado
-    # Para ter as faixas etárias no eixo Y e a população no eixo X,
-    # definimos y='Grupo' e x='work_pop' e a orientação como 'h' (horizontal).
-    fig_horizontal = px.bar(
-        df,
-        x="work_pop",                  # Eixo X: valores numéricos (população)
-        y="Grupo",                     # Eixo Y: categorias (faixas etárias e sexo)
-        color="Grupo",
-        orientation="h",               # Orientação do gráfico como horizontal
-        animation_frame="year",
-        animation_group="Grupo",
-        range_x=[0, df["work_pop"].max() * 1.1],
-        labels={
-            "work_pop": "População na Força de Trabalho (em 1.000 pessoas)",
-            "Grupo": "Sexo e Faixa Etária"
-        },
-        title="Evolução da Força de Trabalho por Sexo e Faixa Etária"
-    )
-
-    st.plotly_chart(fig_horizontal, use_container_width=True)
-
-# Para executar e testar a função (opcional)
-if __name__ == '__main__':
-    pagina_grafico_animado_sexo()
-
-
 # --- LÓGICA PRINCIPAL DE NAVEGAÇÃO ---
 
 # Define a página inicial se não estiver definida
@@ -560,9 +558,6 @@ if st.sidebar.button("Análise da Força de Trabalho", use_container_width=True,
     st.session_state.page = 'exemplo3'
 if st.sidebar.button("Análise de Renda", use_container_width=True, type="primary" if st.session_state.page == 'exemplo4' else "secondary"):
     st.session_state.page = 'exemplo4'
-#adicionado
-if st.sidebar.button("Gráfico Animado por Sexo", use_container_width=True):
-    st.session_state.page = 'animado_sexo'
 
 
 
@@ -577,8 +572,5 @@ elif st.session_state.page == 'exemplo3':
     pagina_exemplo3()
 elif st.session_state.page == 'exemplo4':
     pagina_exemplo4()
-#adicionado
-elif st.session_state.page == 'animado_sexo':
-    pagina_grafico_animado_sexo()
 elif st.session_state.page == 'capa_dashboard':
     pagina_capa_dashboard()
