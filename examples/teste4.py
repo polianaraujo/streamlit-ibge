@@ -91,7 +91,7 @@ def carregar_dados_de_renda():
     """
     url_salario_etario = 'https://raw.githubusercontent.com/polianaraujo/streamlit-ibge/main/tables/tabela_1_15_OcupCaract_Geo_Rend.xls'
     url_salario_instrucao = 'https://raw.githubusercontent.com/polianaraujo/streamlit-ibge/main/tables/tabela_1_17_InstrCaract_Rend.xls'
-    anos = ["2018", "2019", "2020", "2021", "2022", "2023"]
+    anos = ["2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023"]
 
     # --- 1. Carregar dados de Renda por Instrução (inst_sal) ---
     try:
@@ -394,10 +394,14 @@ def pagina_exemplo3():
 
 def pagina_exemplo4():
     """
-    Renderiza uma página com as análises de rendimento usando um único DataFrame unificado.
+    Renderiza uma página com as análises de rendimento, combinando gráficos de linha
+    com gráficos de caixa para uma visão completa.
     """
-    st.title("Análise de Rendimento por Idade e Instrução (2018-2023)")
-    st.markdown("Comparação da evolução do rendimento médio no Brasil, segmentado por faixa etária e grau de instrução.")
+    st.title("Análise de Rendimento por Idade e Instrução (2012-2023)")
+    st.markdown(
+        "Comparação da evolução do rendimento médio no Brasil (gráficos de linha) e da "
+        "distribuição desses rendimentos ao longo dos anos (gráficos de caixa)."
+    )
 
     # Carrega o DataFrame unificado
     df_renda_unificado = carregar_dados_de_renda()
@@ -406,21 +410,18 @@ def pagina_exemplo4():
         st.warning("Não foi possível carregar os dados de renda para a análise.")
         return
 
+    st.subheader("Tendência do Rendimento Médio ao Longo do Tempo")
     col1, col2 = st.columns(2)
 
     # --- Gráfico 1: Rendimento por Faixa Etária (na coluna 1) ---
     with col1:
-        st.subheader("Rendimento Mensal por Faixa Etária")
-        
         # Colunas de rendimento mensal por idade
         cols_idade = ["rend_mes_14_29", "rend_mes_30_49", "rend_mes_50_59", "rend_mes_60_mais"]
         
-        # Transforma o DF para o formato longo, específico para este gráfico
+        # Transforma o DF para o formato longo
         df_long_idade = df_renda_unificado.melt(
-            id_vars=['year'],
-            value_vars=cols_idade,
-            var_name='faixa_etaria',
-            value_name='rendimento_mes'
+            id_vars=['year'], value_vars=cols_idade,
+            var_name='faixa_etaria', value_name='rendimento_mes'
         ).dropna(subset=['rendimento_mes'])
         
         mapa_nomes_idade = {
@@ -439,16 +440,12 @@ def pagina_exemplo4():
 
     # --- Gráfico 2: Rendimento por Grau de Instrução (na coluna 2) ---
     with col2:
-        st.subheader("Rendimento por Hora por Grau de Instrução")
-        
         # Colunas de rendimento por hora por instrução
         cols_instrucao = ["incomplete", "elementary", "high", "college"]
 
         df_long_instrucao = df_renda_unificado.melt(
-            id_vars=['year'],
-            value_vars=cols_instrucao,
-            var_name='grau_instrucao',
-            value_name='rendimento_hora'
+            id_vars=['year'], value_vars=cols_instrucao,
+            var_name='grau_instrucao', value_name='rendimento_hora'
         ).dropna(subset=['rendimento_hora'])
         
         mapa_nomes_instrucao = {
@@ -467,6 +464,45 @@ def pagina_exemplo4():
         fig_instrucao.update_traces(hovertemplate='<b>%{data.name}</b><br>Rendimento: R$ %{y:,.2f}<extra></extra>')
         st.plotly_chart(fig_instrucao, use_container_width=True)
 
+    
+    # --- NOVA SEÇÃO: GRÁFICOS DE CAIXA ---
+    
+    st.divider()
+    st.subheader("Análise da Distribuição dos Rendimentos (2012-2023)")
+    st.markdown(
+        "A análise abaixo mostra a variação dos rendimentos médios anuais para cada grupo. "
+        "Isso ajuda a entender a **volatilidade** e a **faixa de valores** de cada categoria ao longo do tempo."
+    )
+    
+    col3, col4 = st.columns(2)
+
+    # --- Gráfico 3: Box Plot de Rendimento por Faixa Etária (na coluna 3) ---
+    with col3:
+        fig_box_idade = px.box(
+            df_long_idade,  # Reaproveitando o DataFrame do gráfico de linha
+            x='faixa_etaria',
+            y='rendimento_mes',
+            color='faixa_etaria',
+            points="all",
+            title="Distribuição do Rend. Mensal por Idade"
+        )
+        fig_box_idade.update_layout(xaxis_title="Faixa Etária", yaxis_title="Rendimento Mensal (R$)", showlegend=False)
+        st.plotly_chart(fig_box_idade, use_container_width=True)
+
+    # --- Gráfico 4: Box Plot de Rendimento por Grau de Instrução (na coluna 4) ---
+    with col4:
+        fig_box_instrucao = px.box(
+            df_long_instrucao, # Reaproveitando o DataFrame do gráfico de linha
+            x='grau_instrucao',
+            y='rendimento_hora',
+            color='grau_instrucao',
+            points="all",
+            title="Distribuição do Rend. por Hora por Instrução"
+        )
+        fig_box_instrucao.update_layout(xaxis_title="Grau de Instrução", yaxis_title="Rendimento por Hora (R$)", showlegend=False)
+        st.plotly_chart(fig_box_instrucao, use_container_width=True)
+
+    # --- Expander de dados brutos ao final ---
     with st.expander("Ver dados brutos unificados"):
         st.dataframe(df_renda_unificado)
 
