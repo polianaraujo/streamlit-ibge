@@ -394,13 +394,13 @@ def pagina_exemplo3():
 
 def pagina_exemplo4():
     """
-    Renderiza uma página com as análises de rendimento, combinando gráficos de linha
-    com gráficos de caixa para uma visão completa.
+    Renderiza uma página com as análises de rendimento, combinando gráficos de linha,
+    gráficos de caixa e um mapa de calor para uma visão completa.
     """
     st.title("Análise de Rendimento por Idade e Instrução (2012-2023)")
     st.markdown(
-        "Comparação da evolução do rendimento médio no Brasil (gráficos de linha) e da "
-        "distribuição desses rendimentos ao longo dos anos (gráficos de caixa)."
+        "Comparação da evolução do rendimento médio no Brasil (gráficos de linha), da "
+        "distribuição desses rendimentos (gráficos de caixa) e da variação anual (mapa de calor)."
     )
 
     # Carrega o DataFrame unificado
@@ -415,21 +415,16 @@ def pagina_exemplo4():
 
     # --- Gráfico 1: Rendimento por Faixa Etária (na coluna 1) ---
     with col1:
-        # Colunas de rendimento mensal por idade
         cols_idade = ["rend_mes_14_29", "rend_mes_30_49", "rend_mes_50_59", "rend_mes_60_mais"]
-        
-        # Transforma o DF para o formato longo
         df_long_idade = df_renda_unificado.melt(
             id_vars=['year'], value_vars=cols_idade,
             var_name='faixa_etaria', value_name='rendimento_mes'
         ).dropna(subset=['rendimento_mes'])
-        
         mapa_nomes_idade = {
             "rend_mes_14_29": "14 a 29 anos", "rend_mes_30_49": "30 a 49 anos",
             "rend_mes_50_59": "50 a 59 anos", "rend_mes_60_mais": "60 anos ou mais"
         }
         df_long_idade['faixa_etaria'] = df_long_idade['faixa_etaria'].map(mapa_nomes_idade)
-
         fig_etaria = px.line(
             df_long_idade, x='year', y='rendimento_mes', color='faixa_etaria', markers=True,
             labels={"year": "Ano", "rendimento_mes": "Rendimento Médio Mensal (R$)", "faixa_etaria": "Faixa Etária"}
@@ -440,14 +435,11 @@ def pagina_exemplo4():
 
     # --- Gráfico 2: Rendimento por Grau de Instrução (na coluna 2) ---
     with col2:
-        # Colunas de rendimento por hora por instrução
         cols_instrucao = ["incomplete", "elementary", "high", "college"]
-
         df_long_instrucao = df_renda_unificado.melt(
             id_vars=['year'], value_vars=cols_instrucao,
             var_name='grau_instrucao', value_name='rendimento_hora'
         ).dropna(subset=['rendimento_hora'])
-        
         mapa_nomes_instrucao = {
             "incomplete": "Sem instrução ou Fund. Incompleto",
             "elementary": "Fund. Completo ou Médio Incompleto",
@@ -455,7 +447,6 @@ def pagina_exemplo4():
             "college": "Superior Completo"
         }
         df_long_instrucao['grau_instrucao'] = df_long_instrucao['grau_instrucao'].map(mapa_nomes_instrucao)
-
         fig_instrucao = px.line(
             df_long_instrucao, x='year', y='rendimento_hora', color='grau_instrucao', markers=True,
             labels={"year": "Ano", "rendimento_hora": "Rendimento Médio por Hora (R$)", "grau_instrucao": "Grau de Instrução"}
@@ -464,43 +455,60 @@ def pagina_exemplo4():
         fig_instrucao.update_traces(hovertemplate='<b>%{data.name}</b><br>Rendimento: R$ %{y:,.2f}<extra></extra>')
         st.plotly_chart(fig_instrucao, use_container_width=True)
 
-    
-    # --- NOVA SEÇÃO: GRÁFICOS DE CAIXA ---
-    
+    # --- SEÇÃO: GRÁFICOS DE CAIXA ---
     st.divider()
     st.subheader("Análise da Distribuição dos Rendimentos (2012-2023)")
-    st.markdown(
-        "A análise abaixo mostra a variação dos rendimentos médios anuais para cada grupo. "
-        "Isso ajuda a entender a **volatilidade** e a **faixa de valores** de cada categoria ao longo do tempo."
-    )
+    st.markdown("A análise abaixo mostra a variação dos rendimentos médios anuais para cada grupo, ajudando a entender a **volatilidade** de cada categoria ao longo do tempo.")
     
     col3, col4 = st.columns(2)
 
-    # --- Gráfico 3: Box Plot de Rendimento por Faixa Etária (na coluna 3) ---
     with col3:
         fig_box_idade = px.box(
-            df_long_idade,  # Reaproveitando o DataFrame do gráfico de linha
-            x='faixa_etaria',
-            y='rendimento_mes',
-            color='faixa_etaria',
-            points="all",
+            df_long_idade, x='faixa_etaria', y='rendimento_mes', color='faixa_etaria', points="all",
             title="Distribuição do Rend. Mensal por Idade"
         )
         fig_box_idade.update_layout(xaxis_title="Faixa Etária", yaxis_title="Rendimento Mensal (R$)", showlegend=False)
         st.plotly_chart(fig_box_idade, use_container_width=True)
 
-    # --- Gráfico 4: Box Plot de Rendimento por Grau de Instrução (na coluna 4) ---
     with col4:
         fig_box_instrucao = px.box(
-            df_long_instrucao, # Reaproveitando o DataFrame do gráfico de linha
-            x='grau_instrucao',
-            y='rendimento_hora',
-            color='grau_instrucao',
-            points="all",
+            df_long_instrucao, x='grau_instrucao', y='rendimento_hora', color='grau_instrucao', points="all",
             title="Distribuição do Rend. por Hora por Instrução"
         )
         fig_box_instrucao.update_layout(xaxis_title="Grau de Instrução", yaxis_title="Rendimento por Hora (R$)", showlegend=False)
         st.plotly_chart(fig_box_instrucao, use_container_width=True)
+
+
+    # --- NOVA SEÇÃO: MAPA DE CALOR (HEATMAP) ---
+    st.divider()
+    st.subheader("Variação Percentual Anual dos Rendimentos")
+    st.markdown("O mapa de calor revela a **taxa de crescimento (ou queda)** do rendimento em relação ao ano anterior. Verde indica crescimento forte, enquanto vermelho indica queda.")
+
+    # Preparar dados: usar 'year' como índice e selecionar todas as colunas de rendimento
+    df_wide = df_renda_unificado.set_index('year').drop(columns=['BR'])
+    
+    # Calcular a variação percentual ano a ano
+    df_pct_change = df_wide.pct_change() * 100
+    
+    # Renomear colunas para melhor visualização no gráfico
+    df_pct_change = df_pct_change.rename(columns={
+        "incomplete": "Fund. Incompleto (hora)", "elementary": "Fund. Completo (hora)",
+        "high": "Médio Completo (hora)", "college": "Superior (hora)",
+        "rend_mes_14_29": "14-29 anos (mês)", "rend_mes_30_49": "30-49 anos (mês)",
+        "rend_mes_50_59": "50-59 anos (mês)", "rend_mes_60_mais": "60+ anos (mês)"
+    })
+
+    fig_heatmap = px.imshow(
+        df_pct_change.T, # Transpor para ter categorias no eixo Y
+        text_auto=".2f", # Formata o texto para 2 casas decimais, mostrando o valor
+        aspect="auto",
+        # Uma escala de cores divergente é ótima para mostrar valores positivos e negativos
+        color_continuous_scale='RdYlGn', 
+        labels=dict(x="Ano de Referência", y="Categoria de Rendimento", color="Variação %")
+    )
+    fig_heatmap.update_layout(xaxis=dict(side="top")) # Move os anos para o topo
+    st.plotly_chart(fig_heatmap, use_container_width=True)
+
 
     # --- Expander de dados brutos ao final ---
     with st.expander("Ver dados brutos unificados"):
