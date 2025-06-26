@@ -1,6 +1,7 @@
 # streamlit-ibge
 Criação de dashboard com gráficos interativos sobre os dados extraídos do IBGE.
 
+link para o site: https://app-ibge-projecao-de-alvos.streamlit.app/
 
 ## Como executar?
 
