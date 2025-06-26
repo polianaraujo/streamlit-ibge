@@ -41,7 +41,7 @@ def carregar_e_processar_dados(colunas_desejadas, faixas, feature_col_name):
     Função genérica para carregar e processar dados do arquivo Excel do IBGE.
     Carrega dados da força de trabalho por faixa etária ou instrução.
     """
-    anos = ["2018", "2019", "2020", "2021", "2022", "2023"]
+    anos = ["2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023"]
     url = "https://raw.githubusercontent.com/polianaraujo/streamlit-ibge/main/tables/tabela_1_1_Indic_BR.xls"
     
     # Função interna para carregar os dados de uma aba específica (ano)
@@ -91,7 +91,7 @@ def carregar_dados_de_renda():
     """
     url_salario_etario = 'https://raw.githubusercontent.com/polianaraujo/streamlit-ibge/main/tables/tabela_1_15_OcupCaract_Geo_Rend.xls'
     url_salario_instrucao = 'https://raw.githubusercontent.com/polianaraujo/streamlit-ibge/main/tables/tabela_1_17_InstrCaract_Rend.xls'
-    anos = ["2018", "2019", "2020", "2021", "2022", "2023"]
+    anos = ["2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023"]
 
     # --- 1. Carregar dados de Renda por Instrução (inst_sal) ---
     try:
@@ -170,18 +170,55 @@ def carregar_dados_de_renda():
 
 # --- DEFINIÇÕES DAS PÁGINAS ---
 
-def pagina_exemplo1():
-    """Renderiza a página com elementos básicos do Streamlit."""
-    st.title('📝 Elementos Básicos do Streamlit')
-    st.header('Demonstração de componentes de texto e mídia')
-    st.text('Este é um texto simples sem formatação.')
-    st.markdown('**Markdown** permite _formatação_ de texto.')
-    st.code('def hello():\n    print("Olá, Streamlit!")', language='python')
-    st.metric(label="Temperatura", value="28°C", delta="1.2°C")
-    st.success('Mensagem de sucesso.')
-    st.warning('Mensagem de aviso.')
+# def pagina_exemplo1():
+#     """Renderiza a página com elementos básicos do Streamlit."""
+#     st.title('📝 Elementos Básicos do Streamlit')
+#     st.header('Demonstração de componentes de texto e mídia')
+#     st.text('Este é um texto simples sem formatação.')
+#     st.markdown('**Markdown** permite _formatação_ de texto.')
+#     st.code('def hello():\n    print("Olá, Streamlit!")', language='python')
+#     st.metric(label="Temperatura", value="28°C", delta="1.2°C")
+#     st.success('Mensagem de sucesso.')
+#     st.warning('Mensagem de aviso.')
 
-def pagina_exemplo2():
+#adicionado
+def pagina_capa_dashboard():
+    st.markdown("""
+        <div style="text-align: center;">
+            <h1 style="color: #4a90e2; font-size: 48px;">Dashboard IBGE - Brasil</h1>
+            <p style="font-size: 20px; color: #555555;">
+                Um painel interativo com dados de <strong>população</strong>, <strong>força de trabalho</strong> e <strong>rendimento</strong>, 
+                baseado em análises do IBGE.
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    st.markdown("""
+        ### 🔍 O que você encontrará aqui?
+        - 📈 Projeções populacionais do Brasil de 2018 a 2045
+        - 👨‍👩‍👧‍👦 Evolução da força de trabalho por faixa etária e grau de instrução
+        - 💵 Análises de rendimento médio por hora e por mês
+        - 🎬 Gráficos animados para visualizar tendências ao longo dos anos
+
+        ---
+    """)
+
+    st.markdown("""
+        <div style="background-color: #d9edf7; padding: 10px; border-radius: 5px;">
+            <span style="color: #31708f; font-size: 16px;">💡 <strong>Use o menu lateral para navegar pelas análises.</strong></span>
+        </div>
+    """, unsafe_allow_html=True)
+
+
+    st.markdown("""
+        <div style="text-align: center; margin-top: 40px;">
+            <em>Desenvolvido por Poliana e Rosélia • Ciência de Dados 2025</em>
+        </div>
+    """, unsafe_allow_html=True)
+
+def pagina_exemplo1():
     """Renderiza a página com as projeções populacionais do IBGE."""
     st.title("📈 Projeções Populacionais do IBGE (2018-2045)")
     st.markdown("Visualização da projeção da população total do Brasil e da expectativa de vida.")
@@ -225,7 +262,7 @@ def pagina_exemplo2():
     with st.expander("Ver dados brutos"):
         st.dataframe(df_projecoes)
         
-def pagina_exemplo3():
+def pagina_exemplo2():
     """Renderiza a página com gráfico interativo da população por sexo."""
     st.title("👨‍👩‍👧‍👦 População por Sexo no Brasil (2018–2045)")
     st.markdown("Visualização da evolução da população **masculina** e **feminina** no Brasil com base nos dados do IBGE.")
@@ -262,124 +299,109 @@ def pagina_exemplo3():
     with st.expander("Ver dados brutos"):
         st.dataframe(df[["year", "pop_h", "pop_m"]])
 
+def pagina_exemplo3():
+    """
+    Renderiza uma página com um gráfico de área e um de barras animado,
+    ambos controlados dinamicamente por um seletor de análise.
+    """
+    st.title("📈 Evolução da Força de Trabalho (2012-2023)")
+    st.markdown(
+        "Veja como a força de trabalho no Brasil evoluiu. "
+        "Use o seletor para alternar entre a análise por **faixa etária** ou por **grau de instrução**."
+    )
+
+    # --- 1. Seletor para o usuário escolher a análise ---
+    tipo_analise = st.radio(
+        "Escolha o tipo de análise:",
+        ("Faixa Etária", "Grau de Instrução"),
+        horizontal=True,
+    )
+
+    # --- 2. Definição dinâmica dos parâmetros ---
+    # As variáveis aqui definidas serão usadas para AMBOS os gráficos.
+    if tipo_analise == "Faixa Etária":
+        colunas = {"Características selecionadas": "features", "População na força de trabalho\n(1 000 pessoas)": "work_pop"}
+        faixas = {"homens": (15, 22), "mulheres": (24, 31)}
+        feature_col = "features"  # <-- Esta variável torna o código dinâmico!
+        legenda_titulo = "Faixa Etária"
+    else: # Grau de Instrução
+        colunas = {"Características selecionadas": "degree", "População na força de trabalho\n(1 000 pessoas)": "work_pop"}
+        faixas = {"homens": (58, 62), "mulheres": (64, 68)}
+        feature_col = "degree"  # <-- Esta variável torna o código dinâmico!
+        legenda_titulo = "Grau de Instrução"
+
+    # --- 3. Carregamento dos dados ---
+    # O DataFrame 'df' conterá os dados corretos (etários ou de instrução)
+    df = carregar_e_processar_dados(colunas, faixas, feature_col)
+
+    if df.empty:
+        st.warning("Não foi possível carregar os dados para a análise selecionada.")
+        return
+
+    # --- GRÁFICO 1: ÁREA EMPILHADA (Dinâmico) ---
+    st.subheader(f"Composição da Força de Trabalho por {legenda_titulo}")
+    
+    df_agrupado = df.groupby(['year', feature_col])['work_pop'].sum().reset_index()
+
+    fig_area = px.area(
+        df_agrupado,
+        x='year',
+        y='work_pop',
+        color=feature_col, # Usa a variável dinâmica
+        title=f'Evolução da Força de Trabalho por {legenda_titulo}',
+        labels={'year': 'Ano', 'work_pop': 'População', feature_col: legenda_titulo},
+        markers=True
+    )
+    fig_area.update_layout(hovermode="x unified", legend_title=legenda_titulo, yaxis_title="População")
+    fig_area.update_yaxes(tickformat=".2s")
+    st.plotly_chart(fig_area, use_container_width=True)
+
+    
+    st.divider()
+
+    
+    # --- GRÁFICO 2: BARRAS ANIMADAS (Dinâmico) ---
+    st.subheader(f"Evolução Detalhada por Sexo e {legenda_titulo}")
+
+    df_animado = df.copy()
+    df_animado['sex'] = df_animado['sex'].map({'H': 'Homens', 'M': 'Mulheres'})
+    
+    # A coluna "Grupo" é criada usando a variável dinâmica 'feature_col'
+    df_animado["Grupo"] = df_animado["sex"] + " - " + df_animado[feature_col]
+
+    fig_animado = px.bar(
+        df_animado,
+        x="work_pop",
+        y="Grupo",
+        color="Grupo",
+        orientation="h",
+        animation_frame="year",
+        animation_group="Grupo",
+        range_x=[0, df_animado["work_pop"].max() * 1.1],
+        labels={"work_pop": "População na Força de Trabalho", "Grupo": "Grupos"},
+        title=f"Evolução por Sexo e {legenda_titulo}" # Título dinâmico
+    )
+    # Ordena as barras a cada ano para melhor visualização na animação
+    fig_animado.update_layout(yaxis={'categoryorder':'total ascending'})
+    fig_animado.update_xaxes(showgrid=True)
+    st.plotly_chart(fig_animado, use_container_width=True)
+
+
+    # Expander para ver os dados brutos
+    with st.expander("Ver dados brutos da análise"):
+        st.dataframe(df)
+
+
 def pagina_exemplo4():
-    """Renderiza a página com a análise interativa da população por faixa etária."""
-    st.title("📊 Análise da População por Faixa Etária")
-    st.markdown("População na força de trabalho por faixa etária, de 2018 a 2023. Passe o mouse sobre as linhas para ver os valores.")
-
-    # Configurações específicas para faixa etária
-    colunas_desejadas_etario = {
-        "Características selecionadas": "features",
-        "População na força de trabalho\n(1 000 pessoas)": "work_pop"
-    }
-    faixas_etario = {
-        "homens": (15, 22),
-        "mulheres": (24, 31)
-    }
-    
-    # Carrega os dados usando a função genérica
-    etario_filtrado = carregar_e_processar_dados(colunas_desejadas_etario, faixas_etario, "features")
-
-    if etario_filtrado.empty:
-        st.warning("Não foi possível carregar os dados para a análise por faixa etária.")
-        return
-
-    # Agrupa os dados para o gráfico
-    etario_agrupado = etario_filtrado.groupby(["year", "features"])["work_pop"].sum().reset_index()
-
-    # Cria o gráfico de linhas interativo com Plotly
-    fig = px.line(
-        etario_agrupado,
-        x="year",
-        y="work_pop",
-        color="features",
-        markers=True,
-        labels={
-            "year": "Ano",
-            "work_pop": "População na Força de Trabalho",
-            "features": "Faixa Etária"
-        },
-        title="Evolução da Força de Trabalho por Faixa Etária (2018-2023)"
-    )
-
-    fig.update_layout(
-        xaxis_tickangle=-45,
-        yaxis_title="População (em milhões)",
-        legend_title="Faixa Etária",
-        hovermode="x unified"
-    )
-    
-    # Formata o eixo Y para exibir em milhões
-    fig.update_yaxes(tickformat=".2fM")
-
-    # Exibe o gráfico no Streamlit
-    st.plotly_chart(fig, use_container_width=True)
-
-    with st.expander("Ver dados brutos"):
-        st.dataframe(etario_filtrado)
-
-def pagina_exemplo5():
-    """Renderiza a página com a análise interativa da população por grau de instrução."""
-    st.title("🎓 Análise da População por Grau de Instrução")
-    st.markdown("População na força de trabalho por grau de instrução, de 2018 a 2023. Passe o mouse sobre as linhas para ver os valores.")
-
-    # Configurações específicas para grau de instrução
-    colunas_desejadas_instrucao = {
-        "Características selecionadas": "degree",
-        "População na força de trabalho\n(1 000 pessoas)": "work_pop"
-    }
-    faixas_instrucao = {
-        "homens": (58, 62),
-        "mulheres": (64, 68)
-    }
-    
-    # Carrega os dados usando a função genérica
-    socio_filtrado = carregar_e_processar_dados(colunas_desejadas_instrucao, faixas_instrucao, "degree")
-
-    if socio_filtrado.empty:
-        st.warning("Não foi possível carregar os dados para a análise por grau de instrução.")
-        return
-
-    # Agrupa os dados para o gráfico
-    socio_agrupado = socio_filtrado.groupby(['year', 'degree'])['work_pop'].sum().reset_index()
-
-    # Cria o gráfico de linhas interativo com Plotly
-    fig = px.line(
-        socio_agrupado,
-        x="year",
-        y="work_pop",
-        color="degree",
-        markers=True,
-        labels={
-            "year": "Ano",
-            "work_pop": "População na Força de Trabalho",
-            "degree": "Grau de Instrução"
-        },
-        title="Evolução da Força de Trabalho por Grau de Instrução (2018-2023)"
-    )
-    
-    fig.update_layout(
-        xaxis_tickangle=-45,
-        yaxis_title="População (em milhões)",
-        legend_title="Grau de Instrução",
-        hovermode="x unified"
-    )
-
-    # Formata o eixo Y para exibir em milhões
-    fig.update_yaxes(tickformat=".2fM")
-
-    # Exibe o gráfico no Streamlit
-    st.plotly_chart(fig, use_container_width=True)
-
-    with st.expander("Ver dados brutos"):
-        st.dataframe(socio_filtrado)
-
-def pagina_exemplo6_combinada():
     """
-    Renderiza uma página com as análises de rendimento usando um único DataFrame unificado.
+    Renderiza uma página com as análises de rendimento, combinando gráficos de linha,
+    gráficos de caixa e um mapa de calor para uma visão completa.
     """
-    st.title("Análise de Rendimento por Idade e Instrução (2018-2023)")
-    st.markdown("Comparação da evolução do rendimento médio no Brasil, segmentado por faixa etária e grau de instrução.")
+    st.title("Análise de Rendimento por Idade e Instrução (2012-2023)")
+    st.markdown(
+        "Comparação da evolução do rendimento médio no Brasil (gráficos de linha), da "
+        "distribuição desses rendimentos (gráficos de caixa) e da variação anual (mapa de calor)."
+    )
 
     # Carrega o DataFrame unificado
     df_renda_unificado = carregar_dados_de_renda()
@@ -388,29 +410,21 @@ def pagina_exemplo6_combinada():
         st.warning("Não foi possível carregar os dados de renda para a análise.")
         return
 
+    st.subheader("Tendência do Rendimento Médio ao Longo do Tempo")
     col1, col2 = st.columns(2)
 
     # --- Gráfico 1: Rendimento por Faixa Etária (na coluna 1) ---
     with col1:
-        st.subheader("Rendimento Mensal por Faixa Etária")
-        
-        # Colunas de rendimento mensal por idade
         cols_idade = ["rend_mes_14_29", "rend_mes_30_49", "rend_mes_50_59", "rend_mes_60_mais"]
-        
-        # Transforma o DF para o formato longo, específico para este gráfico
         df_long_idade = df_renda_unificado.melt(
-            id_vars=['year'],
-            value_vars=cols_idade,
-            var_name='faixa_etaria',
-            value_name='rendimento_mes'
+            id_vars=['year'], value_vars=cols_idade,
+            var_name='faixa_etaria', value_name='rendimento_mes'
         ).dropna(subset=['rendimento_mes'])
-        
         mapa_nomes_idade = {
             "rend_mes_14_29": "14 a 29 anos", "rend_mes_30_49": "30 a 49 anos",
             "rend_mes_50_59": "50 a 59 anos", "rend_mes_60_mais": "60 anos ou mais"
         }
         df_long_idade['faixa_etaria'] = df_long_idade['faixa_etaria'].map(mapa_nomes_idade)
-
         fig_etaria = px.line(
             df_long_idade, x='year', y='rendimento_mes', color='faixa_etaria', markers=True,
             labels={"year": "Ano", "rendimento_mes": "Rendimento Médio Mensal (R$)", "faixa_etaria": "Faixa Etária"}
@@ -421,18 +435,11 @@ def pagina_exemplo6_combinada():
 
     # --- Gráfico 2: Rendimento por Grau de Instrução (na coluna 2) ---
     with col2:
-        st.subheader("Rendimento por Hora por Grau de Instrução")
-        
-        # Colunas de rendimento por hora por instrução
         cols_instrucao = ["incomplete", "elementary", "high", "college"]
-
         df_long_instrucao = df_renda_unificado.melt(
-            id_vars=['year'],
-            value_vars=cols_instrucao,
-            var_name='grau_instrucao',
-            value_name='rendimento_hora'
+            id_vars=['year'], value_vars=cols_instrucao,
+            var_name='grau_instrucao', value_name='rendimento_hora'
         ).dropna(subset=['rendimento_hora'])
-        
         mapa_nomes_instrucao = {
             "incomplete": "Sem instrução ou Fund. Incompleto",
             "elementary": "Fund. Completo ou Médio Incompleto",
@@ -440,7 +447,6 @@ def pagina_exemplo6_combinada():
             "college": "Superior Completo"
         }
         df_long_instrucao['grau_instrucao'] = df_long_instrucao['grau_instrucao'].map(mapa_nomes_instrucao)
-
         fig_instrucao = px.line(
             df_long_instrucao, x='year', y='rendimento_hora', color='grau_instrucao', markers=True,
             labels={"year": "Ano", "rendimento_hora": "Rendimento Médio por Hora (R$)", "grau_instrucao": "Grau de Instrução"}
@@ -449,30 +455,90 @@ def pagina_exemplo6_combinada():
         fig_instrucao.update_traces(hovertemplate='<b>%{data.name}</b><br>Rendimento: R$ %{y:,.2f}<extra></extra>')
         st.plotly_chart(fig_instrucao, use_container_width=True)
 
+    # --- SEÇÃO: GRÁFICOS DE CAIXA ---
+    st.divider()
+    st.subheader("Análise da Distribuição dos Rendimentos (2012-2023)")
+    st.markdown("A análise abaixo mostra a variação dos rendimentos médios anuais para cada grupo, ajudando a entender a **volatilidade** de cada categoria ao longo do tempo.")
+    
+    col3, col4 = st.columns(2)
+
+    with col3:
+        fig_box_idade = px.box(
+            df_long_idade, x='faixa_etaria', y='rendimento_mes', color='faixa_etaria', points="all",
+            title="Distribuição do Rend. Mensal por Idade"
+        )
+        fig_box_idade.update_layout(xaxis_title="Faixa Etária", yaxis_title="Rendimento Mensal (R$)", showlegend=False)
+        st.plotly_chart(fig_box_idade, use_container_width=True)
+
+    with col4:
+        fig_box_instrucao = px.box(
+            df_long_instrucao, x='grau_instrucao', y='rendimento_hora', color='grau_instrucao', points="all",
+            title="Distribuição do Rend. por Hora por Instrução"
+        )
+        fig_box_instrucao.update_layout(xaxis_title="Grau de Instrução", yaxis_title="Rendimento por Hora (R$)", showlegend=False)
+        st.plotly_chart(fig_box_instrucao, use_container_width=True)
+
+
+    # --- NOVA SEÇÃO: MAPA DE CALOR (HEATMAP) ---
+    st.divider()
+    st.subheader("Variação Percentual Anual dos Rendimentos")
+    st.markdown("O mapa de calor revela a **taxa de crescimento (ou queda)** do rendimento em relação ao ano anterior. Verde indica crescimento forte, enquanto vermelho indica queda.")
+
+    # Preparar dados: usar 'year' como índice e selecionar todas as colunas de rendimento
+    df_wide = df_renda_unificado.set_index('year').drop(columns=['BR'])
+    
+    # Calcular a variação percentual ano a ano
+    df_pct_change = df_wide.pct_change() * 100
+    
+    # Renomear colunas para melhor visualização no gráfico
+    df_pct_change = df_pct_change.rename(columns={
+        "incomplete": "Fund. Incompleto (hora)", "elementary": "Fund. Completo (hora)",
+        "high": "Médio Completo (hora)", "college": "Superior (hora)",
+        "rend_mes_14_29": "14-29 anos (mês)", "rend_mes_30_49": "30-49 anos (mês)",
+        "rend_mes_50_59": "50-59 anos (mês)", "rend_mes_60_mais": "60+ anos (mês)"
+    })
+
+    fig_heatmap = px.imshow(
+        df_pct_change.T, # Transpor para ter categorias no eixo Y
+        text_auto=".2f", # Formata o texto para 2 casas decimais, mostrando o valor
+        aspect="auto",
+        # Uma escala de cores divergente é ótima para mostrar valores positivos e negativos
+        color_continuous_scale='RdYlGn', 
+        labels=dict(x="Ano de Referência", y="Categoria de Rendimento", color="Variação %")
+    )
+    fig_heatmap.update_layout(xaxis=dict(side="top")) # Move os anos para o topo
+    st.plotly_chart(fig_heatmap, use_container_width=True)
+
+
+    # --- Expander de dados brutos ao final ---
     with st.expander("Ver dados brutos unificados"):
         st.dataframe(df_renda_unificado)
+
+
 
 # --- LÓGICA PRINCIPAL DE NAVEGAÇÃO ---
 
 # Define a página inicial se não estiver definida
 if 'page' not in st.session_state:
-    st.session_state.page = 'exemplo1'
+    #modificado também
+    st.session_state.page = 'capa_dashboard'
 
 # Barra lateral de navegação
-st.sidebar.title("Navegação")
-if st.sidebar.button("Exemplo 1: Elementos Básicos", use_container_width=True, type="primary" if st.session_state.page == 'exemplo1' else "secondary"):
-    st.session_state.page = 'exemplo1'
-if st.sidebar.button("Exemplo 2: Projeções IBGE", use_container_width=True, type="primary" if st.session_state.page == 'exemplo2' else "secondary"):
-    st.session_state.page = 'exemplo2'
-if st.sidebar.button("Exemplo 3: População por Sexo", use_container_width=True, type="primary" if st.session_state.page == 'exemplo3' else "secondary"):
-    st.session_state.page = 'exemplo3'
-if st.sidebar.button("Exemplo 4: Faixa Etária", use_container_width=True, type="primary" if st.session_state.page == 'exemplo4' else "secondary"):
-    st.session_state.page = 'exemplo4'
-if st.sidebar.button("Exemplo 5: Grau de Instrução", use_container_width=True, type="primary" if st.session_state.page == 'exemplo5' else "secondary"):
-    st.session_state.page = 'exemplo5'
-if st.sidebar.button("Exemplo 6: Análise de Renda", use_container_width=True, type="primary" if st.session_state.page == 'exemplo6_combinada' else "secondary"):
-    st.session_state.page = 'exemplo6_combinada'
+# st.sidebar.title("Navegação")
+# if st.sidebar.button("Exemplo 1: Elementos Básicos", use_container_width=True, type="primary" if st.session_state.page == 'exemplo1' else "secondary"):
+    # st.session_state.page = 'exemplo1'
 
+#adicionado
+if st.sidebar.button("Home", use_container_width=True):
+    st.session_state.page = 'capa_dashboard'
+if st.sidebar.button("Projeções IBGE", use_container_width=True, type="primary" if st.session_state.page == 'exemplo1' else "secondary"):
+    st.session_state.page = 'exemplo1'
+if st.sidebar.button("População por Sexo", use_container_width=True, type="primary" if st.session_state.page == 'exemplo2' else "secondary"):
+    st.session_state.page = 'exemplo2'
+if st.sidebar.button("Análise da Força de Trabalho", use_container_width=True, type="primary" if st.session_state.page == 'exemplo3' else "secondary"):
+    st.session_state.page = 'exemplo3'
+if st.sidebar.button("Análise de Renda", use_container_width=True, type="primary" if st.session_state.page == 'exemplo4' else "secondary"):
+    st.session_state.page = 'exemplo4'
 
 st.sidebar.divider()
 
@@ -485,7 +551,5 @@ elif st.session_state.page == 'exemplo3':
     pagina_exemplo3()
 elif st.session_state.page == 'exemplo4':
     pagina_exemplo4()
-elif st.session_state.page == 'exemplo5':
-    pagina_exemplo5()
-elif st.session_state.page == 'exemplo6_combinada':
-    pagina_exemplo6_combinada()
+elif st.session_state.page == 'capa_dashboard':
+    pagina_capa_dashboard()
